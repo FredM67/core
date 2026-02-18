@@ -24,6 +24,75 @@
       }
     }
   },
+  "entity": {
+    "binary_sensor": {
+      "switch_port_link": {
+        "name": "Port {port_id} link"
+      }
+    },
+    "sensor": {
+      "bytes_down": {
+        "name": "Total downloaded"
+      },
+      "bytes_up": {
+        "name": "Total uploaded"
+      },
+      "bandwidth_down": {
+        "name": "Download bandwidth"
+      },
+      "bandwidth_up": {
+        "name": "Upload bandwidth"
+      },
+      "xdsl_maxrate_down": {
+        "name": "xDSL max download rate"
+      },
+      "xdsl_maxrate_up": {
+        "name": "xDSL max upload rate"
+      },
+      "xdsl_rate_down": {
+        "name": "xDSL download rate"
+      },
+      "xdsl_rate_up": {
+        "name": "xDSL upload rate"
+      },
+      "xdsl_snr_down": {
+        "name": "xDSL download SNR margin"
+      },
+      "xdsl_snr_up": {
+        "name": "xDSL upload SNR margin"
+      },
+      "xdsl_attn_down": {
+        "name": "xDSL download attenuation"
+      },
+      "xdsl_attn_up": {
+        "name": "xDSL upload attenuation"
+      },
+      "xdsl_crc": {
+        "name": "xDSL CRC errors"
+      },
+      "ftth_sfp_pwr_rx": {
+        "name": "Optical RX power"
+      },
+      "ftth_sfp_pwr_tx": {
+        "name": "Optical TX power"
+      },
+      "switch_port_rx_rate": {
+        "name": "Port {port_id} RX rate"
+      },
+      "switch_port_tx_rate": {
+        "name": "Port {port_id} TX rate"
+      },
+      "switch_port_speed": {
+        "name": "Port {port_id} speed"
+      },
+      "freeplug_tx_rate": {
+        "name": "Powerline TX rate"
+      },
+      "freeplug_rx_rate": {
+        "name": "Powerline RX rate"
+      }
+    }
+  },
   "services": {
     "reboot": {
       "description": "Reboots the Freebox.",

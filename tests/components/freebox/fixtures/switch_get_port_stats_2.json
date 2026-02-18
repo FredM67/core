@@ -1,0 +1,8 @@
+{
+  "rx_bytes_rate": 50000,
+  "tx_bytes_rate": 75000,
+  "rx_packets_rate": 50,
+  "tx_packets_rate": 75,
+  "rx_good_bytes": 12345678,
+  "tx_good_bytes": 98765432
+}

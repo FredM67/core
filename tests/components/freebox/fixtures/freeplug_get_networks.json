@@ -1,0 +1,43 @@
+[
+  {
+    "id": "AA:BB:CC:DD:EE:FF",
+    "members": [
+      {
+        "id": "AA:BB:CC:DD:EE:00",
+        "local_id": "FP-Master",
+        "net_id": "AA:BB:CC:DD:EE:FF",
+        "net_role": "cco",
+        "model": "fbxplugv2-7g",
+        "eth_port_status": "up",
+        "eth_full_duplex": true,
+        "rx_rate": 0,
+        "tx_rate": 0,
+        "has_network": true
+      },
+      {
+        "id": "AA:BB:CC:DD:EE:11",
+        "local_id": "FP-Salon",
+        "net_id": "AA:BB:CC:DD:EE:FF",
+        "net_role": "sta",
+        "model": "fbxplugv2-7g",
+        "eth_port_status": "up",
+        "eth_full_duplex": true,
+        "rx_rate": 280,
+        "tx_rate": 320,
+        "has_network": true
+      },
+      {
+        "id": "AA:BB:CC:DD:EE:22",
+        "local_id": "FP-Bureau",
+        "net_id": "AA:BB:CC:DD:EE:FF",
+        "net_role": "sta",
+        "model": "fbxplugv2-7g",
+        "eth_port_status": "up",
+        "eth_full_duplex": true,
+        "rx_rate": 150,
+        "tx_rate": 180,
+        "has_network": true
+      }
+    ]
+  }
+]

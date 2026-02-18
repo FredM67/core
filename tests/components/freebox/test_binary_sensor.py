@@ -11,11 +11,11 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
 )
 from homeassistant.components.freebox import SCAN_INTERVAL
-from homeassistant.const import ATTR_DEVICE_CLASS
+from homeassistant.const import ATTR_DEVICE_CLASS, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 
 from .common import setup_platform
-from .const import DATA_HOME_PIR_GET_VALUE, DATA_STORAGE_GET_RAIDS
+from .const import DATA_HOME_PIR_GET_VALUE, DATA_STORAGE_GET_RAIDS, DATA_SWITCH_GET_STATUS
 
 from tests.common import async_fire_time_changed
 
@@ -89,3 +89,54 @@ async def test_home(
     assert hass.states.get("binary_sensor.detecteur_couvercle").state == "on"
     assert hass.states.get("binary_sensor.ouverture_porte").state == "off"
     assert hass.states.get("binary_sensor.ouverture_porte_couvercle").state == "on"
+
+
+async def test_switch_port_link(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, router: Mock
+) -> None:
+    """Test switch port link binary sensors."""
+    await setup_platform(hass, BINARY_SENSOR_DOMAIN)
+
+    # Port 1 and 2 are up, Port 3 and 4 are down
+    assert (
+        hass.states.get("binary_sensor.freebox_server_r2_port_1_link").state == STATE_ON
+    )
+    assert (
+        hass.states.get("binary_sensor.freebox_server_r2_port_2_link").state == STATE_ON
+    )
+    assert (
+        hass.states.get("binary_sensor.freebox_server_r2_port_3_link").state
+        == STATE_OFF
+    )
+    assert (
+        hass.states.get("binary_sensor.freebox_server_r2_port_4_link").state
+        == STATE_OFF
+    )
+
+    # Device class should be connectivity
+    assert (
+        hass.states.get("binary_sensor.freebox_server_r2_port_1_link").attributes[
+            ATTR_DEVICE_CLASS
+        ]
+        == BinarySensorDeviceClass.CONNECTIVITY
+    )
+
+    # Now simulate port 1 goes down and port 3 goes up
+    data_switch_status_changed = deepcopy(DATA_SWITCH_GET_STATUS)
+    data_switch_status_changed[0]["link"] = "down"
+    data_switch_status_changed[2]["link"] = "up"
+    data_switch_status_changed[2]["speed"] = "1000baseT-FD"
+    router().switch.get_status.return_value = data_switch_status_changed
+
+    # Simulate an update
+    freezer.tick(SCAN_INTERVAL)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert (
+        hass.states.get("binary_sensor.freebox_server_r2_port_1_link").state
+        == STATE_OFF
+    )
+    assert (
+        hass.states.get("binary_sensor.freebox_server_r2_port_3_link").state == STATE_ON
+    )

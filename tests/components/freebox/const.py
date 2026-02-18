@@ -12,6 +12,22 @@ DATA_SYSTEM_GET_CONFIG = load_json_object_fixture("freebox/system_get_config.jso
 DATA_CONNECTION_GET_STATUS = load_json_object_fixture(
     "freebox/connection_get_status.json"
 )
+DATA_CONNECTION_GET_XDSL = load_json_object_fixture("freebox/connection_get_xdsl.json")
+DATA_CONNECTION_GET_FTTH = load_json_object_fixture("freebox/connection_get_ftth.json")
+
+# switch
+DATA_SWITCH_GET_STATUS = load_json_array_fixture("freebox/switch_get_status.json")
+DATA_SWITCH_GET_PORT_STATS_1 = load_json_object_fixture(
+    "freebox/switch_get_port_stats_1.json"
+)
+DATA_SWITCH_GET_PORT_STATS_2 = load_json_object_fixture(
+    "freebox/switch_get_port_stats_2.json"
+)
+
+# freeplug
+DATA_FREEPLUG_GET_NETWORKS = load_json_array_fixture(
+    "freebox/freeplug_get_networks.json"
+)
 
 DATA_CALL_GET_CALLS_LOG = load_json_array_fixture("freebox/call_get_calls_log.json")
 

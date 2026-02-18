@@ -11,7 +11,10 @@ from homeassistant.helpers import device_registry as dr
 
 from .const import (
     DATA_CALL_GET_CALLS_LOG,
+    DATA_CONNECTION_GET_FTTH,
     DATA_CONNECTION_GET_STATUS,
+    DATA_CONNECTION_GET_XDSL,
+    DATA_FREEPLUG_GET_NETWORKS,
     DATA_HOME_GET_NODES,
     DATA_HOME_PIR_GET_VALUE,
     DATA_HOME_SET_VALUE,
@@ -21,6 +24,9 @@ from .const import (
     DATA_LAN_GET_INTERFACES,
     DATA_STORAGE_GET_DISKS,
     DATA_STORAGE_GET_RAIDS,
+    DATA_SWITCH_GET_PORT_STATS_1,
+    DATA_SWITCH_GET_PORT_STATS_2,
+    DATA_SWITCH_GET_STATUS,
     DATA_SYSTEM_GET_CONFIG,
     DATA_WIFI_GET_GLOBAL_CONFIG,
 )
@@ -85,7 +91,22 @@ def mock_router(mock_device_registry_devices):
         instance.connection.get_status = AsyncMock(
             return_value=DATA_CONNECTION_GET_STATUS
         )
+        instance.connection.get_xdsl = AsyncMock(return_value=DATA_CONNECTION_GET_XDSL)
+        instance.connection.get_ftth = AsyncMock(return_value=DATA_CONNECTION_GET_FTTH)
         # switch
+        instance.switch.get_status = AsyncMock(return_value=DATA_SWITCH_GET_STATUS)
+        instance.switch.get_port_stats = AsyncMock(
+            side_effect=lambda port_id: (
+                DATA_SWITCH_GET_PORT_STATS_1
+                if port_id == 1
+                else DATA_SWITCH_GET_PORT_STATS_2
+            )
+        )
+        # freeplug
+        instance.freeplug.get_freeplug_networks = AsyncMock(
+            return_value=DATA_FREEPLUG_GET_NETWORKS
+        )
+        # wifi
         instance.wifi.get_global_config = AsyncMock(
             return_value=DATA_WIFI_GET_GLOBAL_CONFIG
         )
@@ -128,4 +149,31 @@ def mock_router_bridge_mode_error(mock_device_registry_devices, router):
         side_effect=HttpRequestError("Request failed (APIResponse: some unknown error)")
     )
 
+    return router
+
+
+@pytest.fixture(name="router_xdsl")
+def mock_router_xdsl(mock_device_registry_devices, router):
+    """Mock a successful connection with xDSL media type."""
+    # Modify connection status to return xDSL media type
+    xdsl_connection_status = {**DATA_CONNECTION_GET_STATUS, "media": "xdsl"}
+    router().connection.get_status = AsyncMock(return_value=xdsl_connection_status)
+    return router
+
+
+@pytest.fixture(name="router_no_switch")
+def mock_router_no_switch(mock_device_registry_devices, router):
+    """Mock a connection without switch support."""
+    router().switch.get_status = AsyncMock(
+        side_effect=HttpRequestError("Request failed")
+    )
+    return router
+
+
+@pytest.fixture(name="router_no_freeplug")
+def mock_router_no_freeplug(mock_device_registry_devices, router):
+    """Mock a connection without freeplug support."""
+    router().freeplug.get_freeplug_networks = AsyncMock(
+        side_effect=HttpRequestError("Request failed")
+    )
     return router

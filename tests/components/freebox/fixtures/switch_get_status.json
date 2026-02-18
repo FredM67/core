@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "link": "up",
+    "speed": "1000baseT-FD",
+    "duplex": "full"
+  },
+  {
+    "id": 2,
+    "link": "up",
+    "speed": "100baseT-FD",
+    "duplex": "full"
+  },
+  {
+    "id": 3,
+    "link": "down",
+    "speed": "",
+    "duplex": ""
+  },
+  {
+    "id": 4,
+    "link": "down",
+    "speed": "",
+    "duplex": ""
+  }
+]

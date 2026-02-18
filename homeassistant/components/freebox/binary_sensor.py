@@ -31,6 +31,13 @@ RAID_SENSORS: tuple[BinarySensorEntityDescription, ...] = (
     ),
 )
 
+SWITCH_PORT_LINK_SENSOR = BinarySensorEntityDescription(
+    key="switch_port_link",
+    translation_key="switch_port_link",
+    device_class=BinarySensorDeviceClass.CONNECTIVITY,
+    entity_category=EntityCategory.DIAGNOSTIC,
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -47,6 +54,15 @@ async def async_setup_entry(
         for raid in router.raids.values()
         for description in RAID_SENSORS
     ]
+
+    # Switch port link status sensors
+    _LOGGER.debug(
+        "%s - %s - %s switch port(s)", router.name, router.mac, len(router.switch_ports)
+    )
+    binary_entities.extend(
+        FreeboxSwitchPortLinkSensor(router, port_id, port_data)
+        for port_id, port_data in router.switch_ports.items()
+    )
 
     for node in router.home_devices.values():
         if node["category"] == FreeboxHomeCategory.PIR:
@@ -169,6 +185,56 @@ class FreeboxRaidDegradedSensor(BinarySensorEntity):
     @callback
     def async_on_demand_update(self) -> None:
         """Update state."""
+        self.async_update_state()
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        """Register state update callback."""
+        self.async_update_state()
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                self._router.signal_sensor_update,
+                self.async_on_demand_update,
+            )
+        )
+
+
+class FreeboxSwitchPortLinkSensor(BinarySensorEntity):
+    """Representation of a Freebox switch port link status sensor."""
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    entity_description = SWITCH_PORT_LINK_SENSOR
+
+    def __init__(
+        self,
+        router: FreeboxRouter,
+        port_id: int,
+        port_data: dict[str, Any],
+    ) -> None:
+        """Initialize a Freebox switch port link sensor."""
+        self._router = router
+        self._port_id = port_id
+        self._attr_device_info = router.device_info
+        self._attr_unique_id = f"{router.mac}_switch_port_{port_id}_link"
+        self._attr_translation_placeholders = {"port_id": str(port_id)}
+
+    @callback
+    def async_update_state(self) -> None:
+        """Update the sensor state."""
+        port_data = self._router.switch_ports.get(self._port_id, {})
+        self._attr_is_on = port_data.get("link", False)
+
+    @property
+    def is_on(self) -> bool:
+        """Return true if port link is up."""
+        port_data = self._router.switch_ports.get(self._port_id, {})
+        return port_data.get("link", False)
+
+    @callback
+    def async_on_demand_update(self) -> None:
+        """Update state on demand."""
         self.async_update_state()
         self.async_write_ha_state()
 

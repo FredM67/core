@@ -1,0 +1,12 @@
+{
+  "sfp": {
+    "present": true,
+    "model": "GPON",
+    "vendor": "Freebox",
+    "serial": "FBX123456",
+    "pwr_rx": -1850,
+    "pwr_tx": 250
+  },
+  "link": true,
+  "has_sfp": true
+}

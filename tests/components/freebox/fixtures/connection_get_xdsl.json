@@ -1,0 +1,18 @@
+{
+  "status": "up",
+  "protocol": "adsl_ppp",
+  "modulation": "adsl",
+  "down": {
+    "maxrate": 20640000,
+    "rate": 19232000,
+    "snr": 120,
+    "attn": 220,
+    "crc": 42
+  },
+  "up": {
+    "maxrate": 1024000,
+    "rate": 1024000,
+    "snr": 150,
+    "attn": 110
+  }
+}

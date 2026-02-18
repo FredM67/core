@@ -36,6 +36,9 @@ STORAGE_VERSION = 1
 
 CONNECTION_SENSORS_KEYS = {"rate_down", "rate_up"}
 
+# Extended connection sensor keys (bytes transferred, bandwidth capacity)
+CONNECTION_EXTENDED_SENSORS_KEYS = {"bytes_down", "bytes_up", "bandwidth_down", "bandwidth_up"}
+
 # Icons
 DEVICE_ICONS = {
     "freebox_delta": "mdi:television-guide",

@@ -29,6 +29,7 @@ from homeassistant.util import slugify
 from .const import (
     API_VERSION,
     APP_DESC,
+    CONNECTION_EXTENDED_SENSORS_KEYS,
     CONNECTION_SENSORS_KEYS,
     DOMAIN,
     HOME_COMPATIBLE_CATEGORIES,
@@ -133,6 +134,26 @@ class FreeboxRouter:
         self.home_devices: dict[str, Any] = {}
         self.listeners: list[Callable[[], None]] = []
 
+        # Extended connection data
+        self.connection_media: str = ""
+        self.sensors_connection_extended: dict[str, int] = {}
+
+        # xDSL sensors (only available for xDSL connections)
+        self.supports_xdsl: bool = True
+        self.sensors_xdsl: dict[str, float | int] = {}
+
+        # FTTH sensors (only available for FTTH connections)
+        self.supports_ftth: bool = True
+        self.sensors_ftth: dict[str, float] = {}
+
+        # Switch port sensors
+        self.supports_switch: bool = True
+        self.switch_ports: dict[int, dict[str, Any]] = {}
+
+        # Freeplug (powerline) sensors
+        self.supports_freeplug: bool = True
+        self.freeplug_networks: list[dict[str, Any]] = []
+
     async def update_all(self, now: datetime | None = None) -> None:
         """Update all Freebox platforms."""
         await self.update_device_trackers()
@@ -192,6 +213,14 @@ class FreeboxRouter:
         for sensor_key in CONNECTION_SENSORS_KEYS:
             self.sensors_connection[sensor_key] = connection_datas[sensor_key]
 
+        # Store connection media type and extended connection data
+        self.connection_media = connection_datas.get("media", "")
+        for sensor_key in CONNECTION_EXTENDED_SENSORS_KEYS:
+            if sensor_key in connection_datas:
+                self.sensors_connection_extended[sensor_key] = connection_datas[
+                    sensor_key
+                ]
+
         self._attrs = {
             "IPv4": connection_datas.get("ipv4"),
             "IPv6": connection_datas.get("ipv6"),
@@ -207,6 +236,10 @@ class FreeboxRouter:
 
         await self._update_disks_sensors()
         await self._update_raids_sensors()
+        await self._update_xdsl_sensors()
+        await self._update_ftth_sensors()
+        await self._update_switch_sensors()
+        await self._update_freeplug_sensors()
 
         async_dispatcher_send(self.hass, self.signal_sensor_update)
 
@@ -241,6 +274,117 @@ class FreeboxRouter:
 
         for fbx_raid in fbx_raids:
             self.raids[fbx_raid["id"]] = fbx_raid
+
+    async def _update_xdsl_sensors(self) -> None:
+        """Update xDSL line sensors."""
+        if not self.supports_xdsl or self.connection_media != "xdsl":
+            return
+
+        try:
+            xdsl_data: dict[str, Any] = await self._api.connection.get_xdsl()
+        except HttpRequestError:
+            self.supports_xdsl = False
+            _LOGGER.debug(
+                "Router %s API does not support xDSL sensors",
+                self.name,
+            )
+            return
+
+        # Extract downstream data
+        if down := xdsl_data.get("down"):
+            self.sensors_xdsl["xdsl_maxrate_down"] = down.get("maxrate", 0)
+            self.sensors_xdsl["xdsl_rate_down"] = down.get("rate", 0)
+            self.sensors_xdsl["xdsl_snr_down"] = down.get("snr", 0)
+            self.sensors_xdsl["xdsl_attn_down"] = down.get("attn", 0)
+            self.sensors_xdsl["xdsl_crc_down"] = down.get("crc", 0)
+
+        # Extract upstream data
+        if up := xdsl_data.get("up"):
+            self.sensors_xdsl["xdsl_maxrate_up"] = up.get("maxrate", 0)
+            self.sensors_xdsl["xdsl_rate_up"] = up.get("rate", 0)
+            self.sensors_xdsl["xdsl_snr_up"] = up.get("snr", 0)
+            self.sensors_xdsl["xdsl_attn_up"] = up.get("attn", 0)
+
+    async def _update_ftth_sensors(self) -> None:
+        """Update FTTH (fiber) sensors."""
+        if not self.supports_ftth or self.connection_media != "ftth":
+            return
+
+        try:
+            ftth_data: dict[str, Any] = await self._api.connection.get_ftth()
+        except HttpRequestError:
+            self.supports_ftth = False
+            _LOGGER.debug(
+                "Router %s API does not support FTTH sensors",
+                self.name,
+            )
+            return
+
+        # Extract SFP optical power data
+        if sfp := ftth_data.get("sfp"):
+            if "pwr_rx" in sfp:
+                self.sensors_ftth["ftth_sfp_pwr_rx"] = sfp["pwr_rx"]
+            if "pwr_tx" in sfp:
+                self.sensors_ftth["ftth_sfp_pwr_tx"] = sfp["pwr_tx"]
+
+    async def _update_switch_sensors(self) -> None:
+        """Update Ethernet switch port sensors."""
+        if not self.supports_switch:
+            return
+
+        try:
+            switch_status: list[dict[str, Any]] = (
+                await self._api.switch.get_status() or []
+            )
+        except HttpRequestError:
+            self.supports_switch = False
+            _LOGGER.debug(
+                "Router %s API does not support switch sensors",
+                self.name,
+            )
+            return
+
+        for port in switch_status:
+            port_id = port.get("id")
+            if port_id is None:
+                continue
+
+            port_data: dict[str, Any] = {
+                "id": port_id,
+                "link": port.get("link", "down") == "up",
+                "speed": port.get("speed", ""),
+                "duplex": port.get("duplex", ""),
+            }
+
+            # Get port stats
+            try:
+                stats: dict[str, Any] = await self._api.switch.get_port_stats(port_id)
+                port_data["rx_bytes_rate"] = stats.get("rx_bytes_rate", 0)
+                port_data["tx_bytes_rate"] = stats.get("tx_bytes_rate", 0)
+            except HttpRequestError:
+                port_data["rx_bytes_rate"] = 0
+                port_data["tx_bytes_rate"] = 0
+
+            self.switch_ports[port_id] = port_data
+
+    async def _update_freeplug_sensors(self) -> None:
+        """Update Freeplug (powerline) sensors."""
+        if not self.supports_freeplug:
+            return
+
+        try:
+            freeplug_networks: list[dict[str, Any]] = (
+                await self._api.freeplug.get_freeplug_networks() or []
+            )
+        except HttpRequestError:
+            self.supports_freeplug = False
+            _LOGGER.debug(
+                "Router %s API does not support Freeplug sensors",
+                self.name,
+            )
+            return
+
+        self.freeplug_networks = freeplug_networks
 
     async def update_home_devices(self) -> None:
         """Update Home devices (alarm, light, sensor, switch, remote ...)."""
